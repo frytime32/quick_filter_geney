@@ -4,6 +4,7 @@ import io
 import csv
 import msgpack
 import pandas as pd
+import SSFile
 
 class GeneyQuery:
     """
@@ -28,6 +29,10 @@ class GeneyQuery:
         self.groups = data["groups"]
         self.geney_file_collection = geney_file_collection
 
+    def write_to_file(self, df, out_file_path, out_file_type=None gzip_results=False, include_index=False, null='NA', index_col="Sample", transpose=False):
+        output_file = SSFile.SSFile.factory(out_file_path, out_file_type)
+        output_file.write_to_file(df, gzipResults=gzip_results, includeIndex=include_index, null=null, indexCol=index_col, transpose=transpose)
+    
         
     def filter_data(self):
         
