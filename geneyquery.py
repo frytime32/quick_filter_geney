@@ -4,8 +4,8 @@ import io
 import csv
 import msgpack
 import pandas as pd
-#CHANGE THIS IMPORT BELOW
-#from ShapeShifter.ShapeShifter import * 
+from shapeshifter.files import SSFile 
+import time
 
 class GeneyQuery:
     """
@@ -31,13 +31,16 @@ class GeneyQuery:
         self.geney_file_collection = geney_file_collection
 
     def write_to_file(self, df, out_file_path, out_file_type=None, gzip_results=False, include_index=False, null='NA', index_col="Sample", transpose=False):
-       output_file = SSFile.SSFile.factory(out_file_path, out_file_type)
-       output_file.write_to_file(df, gzipResults=gzip_results, includeIndex=include_index, null=null, indexCol=index_col, transpose=transpose)
-    
+        t1=time.time()
+        output_file = SSFile.factory(out_file_path, out_file_type)
+        output_file.write_to_file(df, gzipResults=gzip_results, includeIndex=include_index, null=null, indexCol=index_col, transpose=transpose)
+        t2=time.time()
+        print("Write to file: " + str(t2-t1))
         
     def filter_data(self):
         
         indexes_sets = []
+        t1=time.time()
         for single_filter in self.filters:
             if self.__determine_filter_type(self.filters[single_filter]) == "discrete":
                 indexes_sets.append(self.__perform_discrete_filter(single_filter, self.filters[single_filter]))
@@ -45,7 +48,8 @@ class GeneyQuery:
                 indexes_sets.append(self.__perform_continuous_filter(single_filter, self.filters[single_filter]))
             else:
                 raise Exception("Error: JSON query is malformed")
-
+        t2=time.time()
+        print("Find indexes of rows that match the filters: " + str(t2-t1))
         # Find intersection of all sets produced by filters
         result_row_indexes = set.intersection(*indexes_sets)
         result_row_indexes = sorted(list(result_row_indexes))
@@ -55,8 +59,11 @@ class GeneyQuery:
             matching_samples.append(self.geney_file_collection.samples[index])
         
         # Determine which columns (specifically the indexes) to grab for all the matching samples
+        t3=time.time()
         desired_column_indexes = self.__determine_additional_columns()
         desired_column_indexes.insert(0,0)
+        t4=time.time()
+        print("Find all columns that will be needed from features and groups: " +str(t4-t3))
         output_rows = []
         header_row=[self.geney_file_collection.features[i].decode('UTF-8') for i in desired_column_indexes]
         output_rows.append(header_row)
@@ -69,7 +76,11 @@ class GeneyQuery:
             reduced_row = (b"\t".join(reduced_row)).decode('UTF-8')
             reduced_row = reduced_row.split("\t")
             output_rows.append(reduced_row)
+        t5=time.time()
+        print("Get actual row data prepped for output: "+str(t5-t4))
         df = self.__build_pandas_dataframe(output_rows)
+        t6=time.time()
+        print("Build pandas data frame: "+str(t6-t5))
         return df
    
 
@@ -114,7 +125,7 @@ class GeneyQuery:
 
         columns_from_group = []
         for group in self.groups:
-            temp_columns = [sample for sample in self.geney_file_collection.samples if( sample.decode("UTF-8").startswith(group + "__")) ]
+            temp_columns = [feature for feature in self.geney_file_collection.features if( feature.decode("UTF-8").startswith(group + "__")) ]
             columns_from_group += temp_columns
 
         #get indexes of the columns
@@ -194,7 +205,7 @@ class GeneyFileCollection:
 
     def __init__(self, tsv_file_path, messagepack_tsv_path, transposed_tsv_file_path,
                 transposed_messagepack_tsv_path):
-
+        t1 = time.time()
         messagepack_tsv = open(messagepack_tsv_path + "/sample_data.msgpack", "rb")
         self.tsv_map = msgpack.unpack(messagepack_tsv)
         sample_file = open(messagepack_tsv_path + "/samples.msgpack", "rb")
@@ -207,6 +218,8 @@ class GeneyFileCollection:
         self.transposed_tsv_file = open(transposed_tsv_file_path, "rb")
         features_file = open(messagepack_tsv_path + "/features.msgpack", "rb")
         self.features = msgpack.unpack(features_file)
+        t2=time.time()
+        print("Initialize geney file collection: " + str(t2-t1))
         #self.json_file = json_file
 
 

@@ -8,5 +8,5 @@ gq = GeneyQuery(files,'{"filters":{"donor_age":[{"operator":">","value":50}],"ba
 
 
 df = gq.filter_data()
-df.to_csv("test_output.tsv", sep = "\t", index=False)
-#gq.write_to_file(df, "sstest.tsv")
+#df.to_csv("test_output.tsv", sep = "\t", index=False)
+gq.write_to_file(df, "sstest.tsv")
